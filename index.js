@@ -51,6 +51,43 @@ app.put('/api/games/:id', (req, res) => {
     });
 });
 
+app.get('/api/games/search', (req, res) => {
+  const { name, platform } = req.body;
+  return db.Game.findAll({ where: { name, platform } })
+    .then(games => res.send(games))
+    .catch((err) => res.status(400).send(err));
+});
+
+app.post('/api/games/search', (req, res) => {
+  const { name, platform } = req.body;
+
+  if (!name) {
+    return res.status(400).json({
+      error: "Veuillez fournir un nom de jeu à rechercher."
+    });
+  }
+
+  const whereClause = {};
+
+  whereClause.name = db.Sequelize.where(
+    db.Sequelize.fn('LOWER', db.Sequelize.col('name')),
+    'LIKE',
+    `%${name.toLowerCase()}%`
+  );
+
+  if (platform && platform.trim() !== '' && platform.toLowerCase() !== 'all') {
+    whereClause.platform = platform;
+  }
+
+  return db.Game.findAll({ where: whereClause })
+    .then(games => {
+      res.json(games);
+    })
+    .catch((err) => {
+      console.log('***There was an error searching games', JSON.stringify(err));
+      return res.status(400).send(err);
+    });
+});
 
 app.listen(3000, () => {
   console.log('Server is up on port 3000');
