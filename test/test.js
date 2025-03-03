@@ -66,7 +66,7 @@ describe('GET /api/games', function () {
  */
 describe('PUT /api/games/1', function () {
     let data = {
-        id : 1,
+        id: 1,
         publisherId: "999000999",
         name: "Test App Updated",
         platform: "android",
@@ -131,3 +131,26 @@ describe('GET /api/games', function () {
     });
 });
 
+/**
+ * Testing search game endpoint
+ */
+describe('POST /api/games/search', function () {
+    let data = {
+        name: "Test App",
+        platform: "ios"
+    }
+    it('respond with 200 and an object that matches what we created', function (done) {
+        request(app)
+            .post('/api/games')
+            .send(data)
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, result) => {
+                if (err) return done(err);
+                assert.strictEqual(result.body.name, 'Test App');
+                assert.strictEqual(result.body.platform, 'ios');
+                done();
+            });
+    });
+});
