@@ -135,21 +135,58 @@ describe('GET /api/games', function () {
  * Testing search game endpoint
  */
 describe('POST /api/games/search', function () {
-    let data = {
-        name: "Test App",
+    let testGame = {
+        name: "Swing Rider",
         platform: "ios"
-    }
-    it('respond with 200 and an object that matches what we created', function (done) {
+    };
+
+    before(function (done) {
         request(app)
             .post('/api/games')
-            .send(data)
+            .send(testGame)
             .set('Accept', 'application/json')
             .expect('Content-Type', /json/)
             .expect(200)
-            .end((err, result) => {
+            .end((err, res) => {
                 if (err) return done(err);
-                assert.strictEqual(result.body.name, 'Test App');
-                assert.strictEqual(result.body.platform, 'ios');
+                assert.strictEqual(res.body.name, testGame.name);
+                assert.strictEqual(res.body.platform, testGame.platform);
+                testGame.id = res.body.id;
+                done();
+            });
+    });
+
+    it('should return a matching game when searched by name', function (done) {
+        request(app)
+            .post('/api/games/search')
+            .send({ name: "Swing Rider" })
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+
+                console.log("Search API Response:", res.body);
+
+                const result = res.body[0];
+
+                assert.strictEqual(result.name, "Swing Rider");
+                assert.strictEqual(result.platform, "ios");
+                done();
+            });
+    });
+
+
+    it('should return an empty array if no games match the search criteria', function (done) {
+        request(app)
+            .post('/api/games/search')
+            .send({ name: "WTF Game" })
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                assert.strictEqual(res.body.length, 0);
                 done();
             });
     });
