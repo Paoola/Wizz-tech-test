@@ -2,104 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const db = require('./models');
 
+const gameRoutes = require('./routes/games');
+
 const app = express();
 
 app.use(bodyParser.json());
 app.use(express.static(`${__dirname}/static`));
 
-app.get('/api/games', (req, res) => db.Game.findAll()
-  .then(games => res.send(games))
-  .catch((err) => {
-    console.log('There was an error querying games', JSON.stringify(err));
-    return res.send(err);
-  }));
-
-app.post('/api/games', (req, res) => {
-  const { publisherId, name, platform, storeId, bundleId, appVersion, isPublished } = req.body;
-  return db.Game.create({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
-    .then(game => res.send(game))
-    .catch((err) => {
-      console.log('***There was an error creating a game', JSON.stringify(err));
-      return res.status(400).send(err);
-    });
-});
-
-app.delete('/api/games/:id', async (req, res) => {
-  const id = Number(req.params.id);
-
-  if (!id || isNaN(id) || id <= 0 || !Number.isInteger(id)) {
-    return res.status(400).json({ error: "Invalid ID. It must be a positive integer." });
-  }
-
-  try {
-    const game = await db.Game.findByPk(id);
-
-    if (!game) {
-      return res.status(404).json({ error: "Game not found." });
-    }
-
-    await game.destroy({ force: true });
-    res.json({ success: true, id });
-
-  } catch (err) {
-    console.error('*** Error deleting game', err);
-    res.status(500).json({ error: "An error occurred while deleting the game." });
-  }
-});
-
-
-app.put('/api/games/:id', (req, res) => {
-  // eslint-disable-next-line radix
-  const id = parseInt(req.params.id);
-  return db.Game.findByPk(id)
-    .then((game) => {
-      const { publisherId, name, platform, storeId, bundleId, appVersion, isPublished } = req.body;
-      return game.update({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
-        .then(() => res.send(game))
-        .catch((err) => {
-          console.log('***Error updating game', JSON.stringify(err));
-          res.status(400).send(err);
-        });
-    });
-});
-
-app.get('/api/games/search', (req, res) => {
-  const { name, platform } = req.body;
-  return db.Game.findAll({ where: { name, platform } })
-    .then(games => res.send(games))
-    .catch((err) => res.status(400).send(err));
-});
-
-app.post('/api/games/search', (req, res) => {
-  const { name, platform } = req.body;
-
-  if (!name) {
-    return res.status(400).json({
-      error: "Veuillez fournir un nom de jeu à rechercher."
-    });
-  }
-
-  const whereClause = {};
-
-  whereClause.name = db.Sequelize.where(
-    db.Sequelize.fn('LOWER', db.Sequelize.col('name')),
-    'LIKE',
-    `%${name.toLowerCase()}%`
-  );
-
-  if (platform && platform.trim() !== '' && platform.toLowerCase() !== 'all') {
-    whereClause.platform = platform;
-  }
-
-  return db.Game.findAll({ where: whereClause })
-    .then(games => {
-      res.json(games);
-    })
-    .catch((err) => {
-      console.log('***There was an error searching games', JSON.stringify(err));
-      return res.status(400).send(err);
-    });
-});
+app.use('/api/games', gameRoutes);
 
 app.listen(3000, () => {
   console.log('Server is up on port 3000');
