@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../models');
-
+const { getTop100Games } = require('../utils/game');
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -91,5 +91,30 @@ router.post('/search', (req, res) => {
             res.status(400).send(err);
         });
 });
+
+
+router.post('/populate', (req, res) => {
+    Promise.all([
+        getTop100Games('android'),
+        getTop100Games('ios'),
+    ]).then(([androidGames, iosGames]) => {
+        const parsedGames = [...androidGames, ...iosGames].map(item => ({
+            publisherId: item.publisher_id,
+            name: item.name,
+            platform: item.os,
+            storeId: item.publisher_id || item.id || item.appId || item.app_id,
+            bundleId: item.bundle_id || item.id || item.appId || item.app_id,
+            appVersion: item.version,
+            isPublished: true
+        }))
+
+        db.Game.bulkCreate(parsedGames)
+        console.log({ parsedGames })
+    })
+        .catch(err => {
+            console.error('Error searching games:', err);
+            res.status(400).send(err);
+        });
+})
 
 module.exports = router;

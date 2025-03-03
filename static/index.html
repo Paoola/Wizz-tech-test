@@ -32,6 +32,15 @@
       <game v-for="(game, index) in games" :key="`game-${index}`" :game="game" @save-game="onAddOrUpdateGame"
         @delete-game="deleteGame" />
     </section>
+
+    <section class="section section-container" style="padding-top: 24px; padding-bottom: 5px;">
+      <h2 class="title">Populate with the top 100 games</h2>
+      <div class="field">
+        <div class="control">
+          <button @click="populateGames" class="button is-success">Populate</button>
+        </div>
+      </div>
+    </section>
     <section class="section section-container" style="padding-bottom: 10px;">
       <div class="box">
         <add-update-game title="Add Game" @save-game="onAddOrUpdateGame" />
@@ -167,9 +176,9 @@
     }
 
     const Search = {
-      data () {
+      data() {
         return {
-          name: '', 
+          name: '',
           platform: ''
         }
       },
@@ -232,6 +241,14 @@
               this.games = copy
             })
         },
+        populateGames() {
+          return axios.post(`${this.apiURL}/populate`)
+            .then((response) => {
+              const copy = this.games.slice()
+              copy.push(...response.data)
+              this.games = copy
+            })
+        },
         updateGame(game) {
           return axios.put(`${this.apiURL}/${game.id}`, game)
             .then((response) => {
@@ -250,7 +267,7 @@
               this.games = copy
             })
         },
-        searchGames (search) {
+        searchGames(search) {
           return axios.post(`${this.apiURL}/search`, search)
             .then((response) => {
               this.games = response.data;
