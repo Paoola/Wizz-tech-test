@@ -24,17 +24,29 @@ app.post('/api/games', (req, res) => {
     });
 });
 
-app.delete('/api/games/:id', (req, res) => {
-  // eslint-disable-next-line radix
-  const id = parseInt(req.params.id);
-  return db.Game.findByPk(id)
-    .then(game => game.destroy({ force: true }))
-    .then(() => res.send({ id }))
-    .catch((err) => {
-      console.log('***Error deleting game', JSON.stringify(err));
-      res.status(400).send(err);
-    });
+app.delete('/api/games/:id', async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!id || isNaN(id) || id <= 0 || !Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid ID. It must be a positive integer." });
+  }
+
+  try {
+    const game = await db.Game.findByPk(id);
+
+    if (!game) {
+      return res.status(404).json({ error: "Game not found." });
+    }
+
+    await game.destroy({ force: true });
+    res.json({ success: true, id });
+
+  } catch (err) {
+    console.error('*** Error deleting game', err);
+    res.status(500).json({ error: "An error occurred while deleting the game." });
+  }
 });
+
 
 app.put('/api/games/:id', (req, res) => {
   // eslint-disable-next-line radix
