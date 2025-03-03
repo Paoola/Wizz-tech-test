@@ -66,7 +66,7 @@ describe('GET /api/games', function () {
  */
 describe('PUT /api/games/1', function () {
     let data = {
-        id : 1,
+        id: 1,
         publisherId: "999000999",
         name: "Test App Updated",
         platform: "android",
@@ -131,3 +131,63 @@ describe('GET /api/games', function () {
     });
 });
 
+/**
+ * Testing search game endpoint
+ */
+describe('POST /api/games/search', function () {
+    let testGame = {
+        name: "Swing Rider",
+        platform: "ios"
+    };
+
+    before(function (done) {
+        request(app)
+            .post('/api/games')
+            .send(testGame)
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                assert.strictEqual(res.body.name, testGame.name);
+                assert.strictEqual(res.body.platform, testGame.platform);
+                testGame.id = res.body.id;
+                done();
+            });
+    });
+
+    it('should return a matching game when searched by name', function (done) {
+        request(app)
+            .post('/api/games/search')
+            .send({ name: "Swing Rider" })
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+
+                console.log("Search API Response:", res.body);
+
+                const result = res.body[0];
+
+                assert.strictEqual(result.name, "Swing Rider");
+                assert.strictEqual(result.platform, "ios");
+                done();
+            });
+    });
+
+
+    it('should return an empty array if no games match the search criteria', function (done) {
+        request(app)
+            .post('/api/games/search')
+            .send({ name: "WTF Game" })
+            .set('Accept', 'application/json')
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end((err, res) => {
+                if (err) return done(err);
+                assert.strictEqual(res.body.length, 0);
+                done();
+            });
+    });
+});
